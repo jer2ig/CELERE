@@ -82,9 +82,39 @@ class Annotator:
             self.im = im
         self.lw = line_width or max(round(sum(im.shape) / 2 * 0.003), 2)  # line width
 
-    def box_label(self, box, label='', color=(128, 128, 128), txt_color=(255, 255, 255)):
+    def next_path(self, path_pattern):
+        """
+        https://stackoverflow.com/questions/17984809/how-do-i-create-an-incrementing-filename-in-python
+        Finds the next free path in an sequentially named list of files
+
+        e.g. path_pattern = 'file-%s.txt':
+
+        file-1.txt
+        file-2.txt
+        file-3.txt
+
+        Runs in log(n) time where n is the number of existing files in sequence
+        """
+        i = 1
+
+        # First do an exponential search
+        while os.path.exists(path_pattern % i):
+            i = i * 2
+
+        # Result lies somewhere in the interval (i/2..i]
+        # We call this interval (a..b] and narrow it down until a + 1 = b
+        a, b = (i // 2, i)
+        while a + 1 < b:
+            c = (a + b) // 2  # interval midpoint
+            a, b = (c, b) if os.path.exists(path_pattern % c) else (a, c)
+
+        return path_pattern % b
+
+    def box_label(self, box, label='', cls=0, color=(128, 128, 128), txt_color=(255, 255, 255)):
         # Add one xyxy box to image with label
         if self.pil or not is_ascii(label):
+            if self.save_detections:
+                raise NotImplemented("PIL not supported for saving detected items individually")
             self.draw.rectangle(box, width=self.lw, outline=color)  # box
             if label:
                 w, h = self.font.getsize(label)  # text width, height
@@ -99,6 +129,10 @@ class Annotator:
         else:  # cv2
             p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
             cv2.rectangle(self.im, p1, p2, color, thickness=self.lw, lineType=cv2.LINE_AA)
+            if self.save_detections:
+                cropped = self.im[p1[1]:p2[1],p1[0]:p2[0]]
+                fname = str(self.save_detections) + '/' +  str(cls) + "-%s.jpg"
+                fname = self.next_path(fname)
             if label:
                 tf = max(self.lw - 1, 1)  # font thickness
                 w, h = cv2.getTextSize(label, 0, fontScale=self.lw / 3, thickness=tf)[0]  # text width, height
