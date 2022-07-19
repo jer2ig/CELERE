@@ -5,6 +5,7 @@ import shutil
 import time
 import warnings
 from enum import Enum
+import numpy as np
 
 import torch
 import torch.nn as nn
@@ -233,9 +234,11 @@ def main_worker(gpu, ngpus_per_node, args):
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
         val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, shuffle=False, drop_last=True)
     else:
-        train_classes = [label for _, label in train_dataset]
-        _, train_classes = np.unique(train_classes, return_counts=True)
-        samples_weight = torch.from_numpy(train_classes / sum(train_classes))
+        ys = [label for _, label in train_dataset]
+        _, weight = np.unique(ys, return_counts=True)
+        weight = 1/weight
+        samples_weight = np.array([weight[t] for t in ys])
+        samples_weight = torch.from_numpy(samples_weight)
         sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
         train_sampler = sampler
         val_sampler = None
