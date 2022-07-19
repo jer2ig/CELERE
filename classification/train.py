@@ -19,7 +19,7 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
-from torch.utils.data import Subset
+from torch.utils.data import Subset, WeightedRandomSampler
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
@@ -233,7 +233,11 @@ def main_worker(gpu, ngpus_per_node, args):
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
         val_sampler = torch.utils.data.distributed.DistributedSampler(val_dataset, shuffle=False, drop_last=True)
     else:
-        train_sampler = None
+        train_classes = [label for _, label in train_dataset]
+        _, train_classes = np.unique(train_classes, return_counts=True)
+        samples_weight = torch.from_numpy(train_classes / sum(train_classes))
+        sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+        train_sampler = sampler
         val_sampler = None
 
     train_loader = torch.utils.data.DataLoader(
