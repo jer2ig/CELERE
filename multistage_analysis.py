@@ -30,6 +30,7 @@ from utils.general import (print_args, check_img_size, non_max_suppression, cv2,
 from detect import run
 from utils.torch_utils import select_device, time_sync
 from utils.plots import save_one_box, Annotator, colors
+from damage_assessment.scoring_logic import building_scoring
 
 
 @torch.no_grad()
@@ -47,24 +48,31 @@ def run(
         line_thickness=3,  # bounding box thickness (pixels)
 ):
     source = str(source)
-    save_img = not nosave and not source.endswith('.txt')  # save inference images
+    save_img = not nosave  # save inference images
 
     # Directories
     save_dir = increment_path(Path(project) / name)  # increment run
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
-    # Load model
     device = select_device(device)
-    model = DetectMultiBackend(weights, device=device)
-    stride, names, pt = model.stride, model.names, model.pt
+
+    # Load building analysis model
+    model_building = DetectMultiBackend(weights, device=device)
+    stride, names, pt = model_building.stride, model_building.names, model_building.pt
     imgsz = check_img_size(imgsz, s=stride)  # check image size
+
+    # Load damage detection model
+    #model_damage = DetectMultiBackend(weights, device=device)
+    model_damage = Classify(weights, device=device)
+
 
     # Dataloader
     dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
     bs = 1  # batch_size
 
     # Run inference
-    model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
+    model_building.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
+    model_damage.warmup(imgsz=(1, 3, *imgsz))
     dt, seen = [0.0, 0.0, 0.0], 0
     for path, im, im0s, vid_cap, s in dataset:
         t1 = time_sync()
@@ -77,25 +85,35 @@ def run(
         dt[0] += t2 - t1
 
         # Inference
-        pred = model(im, augment=True)
+        pred_buildings = model_building(im, augment=True)
         t3 = time_sync()
         dt[1] += t3 - t2
-        print("Predictions after inference")
-        print(pred)
 
         # NMS
         classes = None # Filter by classes
-        pred = non_max_suppression(pred, classes=classes)
+        pred_buildings = non_max_suppression(pred_buildings, classes=classes)
         dt[2] += time_sync() - t3
-        print("Predictions after NMS")
+        print("Predictions after NMS - buildings")
         print(pred)
 
+
+        # Inference
+        pred_damage = model_damage(im, augment=True)
+        print("Predictions after inference - damage")
+        print(pred_buildings)
+
+        # NMS
+        classes = None # Filter by classes
+        pred_damage = non_max_suppression(pred, classes=classes)
+        dt[2] += time_sync() - t3
+        print("Predictions after NMS")
+        print(pred_damage)
         # Second-stage classifier (optional)
         # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
 
         # Process predictions
         save_crop = True
-        for i, det in enumerate(pred):  # per image
+        for i, det_build, det_dam in enumerate(pred_buildings, pred_damage):  # per image
             seen += 1
             p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
@@ -107,17 +125,18 @@ def run(
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy()  # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
-            if len(det):
+            if len(det_build):
                 # Rescale boxes from img_size to im0 size
-                det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
+                det_build[:, :4] = scale_coords(im.shape[2:], det_build[:, :4], im0.shape).round()
+                det_dam[:, :4] = scale_coords(im.shape[2:], det_dam[:, :4], im0.shape).round()
 
                 # Print results
-                for c in det[:, -1].unique():
-                    n = (det[:, -1] == c).sum()  # detections per class
+                for c in det_build[:, -1].unique():
+                    n = (det_build[:, -1] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                 # Write results
-                for *xyxy, conf, cls in reversed(det):
+                for *xyxy, conf, cls in reversed(det_build):
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
@@ -130,6 +149,7 @@ def run(
                         annotator.box_label(xyxy, label, c,  color=colors(c, True))
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+            risk = building_scoring(det_build, det_dam)
 
             # Stream results
             im0 = annotator.result()
