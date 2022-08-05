@@ -113,8 +113,6 @@ class Annotator:
     def box_label(self, box, label='', cls=0, color=(128, 128, 128), txt_color=(255, 255, 255)):
         # Add one xyxy box to image with label
         if self.pil or not is_ascii(label):
-            if self.save_detections:
-                raise NotImplemented("PIL not supported for saving detected items individually")
             self.draw.rectangle(box, width=self.lw, outline=color)  # box
             if label:
                 w, h = self.font.getsize(label)  # text width, height
@@ -129,10 +127,6 @@ class Annotator:
         else:  # cv2
             p1, p2 = (int(box[0]), int(box[1])), (int(box[2]), int(box[3]))
             cv2.rectangle(self.im, p1, p2, color, thickness=self.lw, lineType=cv2.LINE_AA)
-            if self.save_detections:
-                cropped = self.im[p1[1]:p2[1],p1[0]:p2[0]]
-                fname = str(self.save_detections) + '/' +  str(cls) + "-%s.jpg"
-                fname = self.next_path(fname)
             if label:
                 tf = max(self.lw - 1, 1)  # font thickness
                 w, h = cv2.getTextSize(label, 0, fontScale=self.lw / 3, thickness=tf)[0]  # text width, height
