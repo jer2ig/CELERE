@@ -260,7 +260,7 @@ def validate(val_loader, model, criterion, args, logger):
     top1 = AverageMeter('Acc@1', ':6.2f', Summary.AVERAGE)
     top5 = AverageMeter('Acc@5', ':6.2f', Summary.AVERAGE)
     progress = ProgressMeter(
-        len(val_loader) + (args.distributed and (len(val_loader.sampler) * args.world_size < len(val_loader.dataset))),
+        len(val_loader),
         [batch_time, losses, top1, top5],
         prefix='Test: ')
 
