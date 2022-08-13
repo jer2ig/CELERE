@@ -380,6 +380,7 @@ class ProgressMeter(object):
 
 
     def get(self, prefix = ""):
+        dict = {}
         for meter in self.meters:
             dict[prefix+meter.name] = meter.avg
         return dict
