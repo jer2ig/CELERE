@@ -251,7 +251,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args, logger):
 
         if i % args.print_freq == 0:
             progress.display(i + 1)
-    logger.log(progress.get({"epoch": epoch}))
+    logger.log(progress.get(prefix="train/"), increment=True)
 
 
 def validate(val_loader, model, criterion, args, logger):
@@ -293,7 +293,7 @@ def validate(val_loader, model, criterion, args, logger):
                 progress.display(i + 1)
 
     progress.display_summary()
-    logger.log(progress.get({"epoch": epoch}))
+    logger.log(progress.get(prefix="val"))
 
     return top1.avg
 
@@ -318,9 +318,12 @@ class Logger():
                                     name=None,
                                     job_type='Training',
                                     allow_val_change=True)
+        self.step= 0
 
-    def log(self, progress):
-        self.wandb_run.log(progress)
+    def log(self, progress, increment=False):
+        if increment:
+            self.step += 1
+        self.wandb_run.log(progress, step=self.step)
 
 
 class AverageMeter(object):
@@ -376,9 +379,9 @@ class ProgressMeter(object):
         self.prefix = prefix
 
 
-    def get(self, dict):
+    def get(self, prefix = ""):
         for meter in self.meters:
-            dict[meter.name] = meter.avg
+            dict[prefix+meter.name] = meter.avg
         return dict
 
 
