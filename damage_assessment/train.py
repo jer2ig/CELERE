@@ -53,8 +53,8 @@ parser.add_argument('--momentum', default=0.9, type=float, metavar='M',
 parser.add_argument('--wd', '--weight-decay', default=1e-4, type=float,
                     metavar='W', help='weight decay (default: 1e-4)',
                     dest='weight_decay')
-parser.add_argument('-p', '--print-freq', default=10, type=int,
-                    metavar='N', help='print frequency (default: 10)')
+parser.add_argument('-p', '--print-freq', default=0, type=int,
+                    metavar='N', help='print frequency (default: 0, disabled)')
 parser.add_argument('--resume', default='', type=str, metavar='PATH',
                     help='path to latest checkpoint (default: none)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true',
@@ -249,8 +249,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args, logger):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if i % args.print_freq == 0:
+        if args.print_freq != 0 and i % args.print_freq == 0:
             progress.display(i + 1)
+    progress.display_summary()
     logger.log(progress.get(prefix="train/"), increment=True)
 
 
@@ -289,11 +290,11 @@ def validate(val_loader, model, criterion, args, logger):
             batch_time.update(time.time() - end)
             end = time.time()
 
-            if i % args.print_freq == 0:
+            if args.print_freq != 0 and i % args.print_freq == 0:
                 progress.display(i + 1)
 
     progress.display_summary()
-    logger.log(progress.get(prefix="val"))
+    logger.log(progress.get(prefix="val/"))
 
     return top1.avg
 
@@ -318,7 +319,7 @@ class Logger():
                                     name=None,
                                     job_type='Training',
                                     allow_val_change=True)
-        self.step= 0
+        self.step= -1
 
     def log(self, progress, increment=False):
         if increment:
