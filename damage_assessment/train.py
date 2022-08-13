@@ -310,7 +310,7 @@ class Summary(Enum):
     COUNT = 3
 
 class Logger():
-    def __init(self, args):
+    def __init__(self, args):
         self.wandb_run = wandb.init(config=args,
                                     resume="allow",
                                     project='',
