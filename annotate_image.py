@@ -15,7 +15,7 @@ from utils.plots import Annotator, colors
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('image', type=str, default=ROOT / 'image.jpg', help='image path')
+    parser.add_argument('image', type=str, default='image.jpg', help='image path')
     parser.add_argument('--labels',default = None, nargs='+', type=str, help='list of label names')
     parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
     parser.add_argument('--image-size', default=None, type=int, help='size larger axis of image')
