@@ -67,7 +67,7 @@ def run(self,
 
     save_img = not nosave and not source.endswith('.txt')  # save inference images
     is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
-
+    print(weights_b)
     # Building detection model
     model_b = Detection(data=data_b, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_b)
 
