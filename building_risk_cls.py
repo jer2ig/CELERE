@@ -30,6 +30,7 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 from ClassDetect import Detection
+from damage_assessment.scoring_logic import Damage, check_overlap, identify_walls, building_scoring
 
 
 def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
@@ -94,7 +95,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
             txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
             s += '%gx%g ' % im.shape[-2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
-            imc = im0.copy() if save_crop else im0  # for save_crop
+            imc = im0.copy()   # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(model_b.names))
             if len(det):
                 # Rescale boxes from img_size to im0 size
@@ -105,21 +106,41 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     n = (det[:, -1] == c).sum()  # detections per class
                     s += f"{n} {model_b.names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
-                # Write results
+                buildings = []
+                walls = []
+                # Obtain buildings and walls
                 for *xyxy, conf, cls in reversed(det):
+                    if model_b.names[cls] == 'house':
+                        print("building")
+                        buildings.append(xyxy)
+                    elif model_b.names[cls] == 'wall':
+                        print("wall")
+                        walls.append(xyxy)
+
+                check_overlap(buildings)
+"""
+                for b in buildings:
+                    walls_temp = identify_walls(b, walls)
+                    scores = []
+                    for w in walls_temp:
+                        wall = save_one_box(w, imc)
+                        prediction = model_w(wall)
+                        scores.append(prediction)
+                    score = building_scoring(walls_damage)
+
                     if save_txt:  # Write to file
-                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
+                        xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        line = (score.value, *xywh)  # label format
                         with open(f'{txt_path}.txt', 'a') as f:
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
                     if save_img or save_crop or view_img:  # Add bbox to image
-                        c = int(cls)  # integer class
-                        label = None if hide_labels else (model_b.names[c] if hide_conf else f'{model_b.names[c]} {conf:.2f}')
-                        annotator.box_label(xyxy, label, color=colors(c, True))
-                    if save_crop:
-                        save_one_box(xyxy, imc, file=save_dir / 'crops' / model_b.names[c] / f'{p.stem}.jpg', BGR=True)
+                        label = score.value
+                        annotator.box_label(xyxy, label, color=Damage.get_color(score))
 
+                    if save_crop:
+                        save_one_box(b, imc, file=save_dir / 'crops' / score.value / f'{p.stem}.jpg', BGR=True)
+"""
             # Stream results
             im0 = annotator.result()
             if view_img:
