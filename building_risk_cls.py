@@ -60,8 +60,8 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
         dnn=False,  # use OpenCV DNN for ONNX inference
         ):
     # Directories
-    self.save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)
-    (self.save_dir / 'labels' if save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+    save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)
+    (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
     source = str(source)
 
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -94,12 +94,12 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
             p = Path(p)  # to Path
-            save_path = str(self.save_dir / p.name)  # im.jpg
-            txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
+            save_path = str(save_dir / p.name)  # im.jpg
+            txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
             s += '%gx%g ' % im.shape[-2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop
-            annotator = Annotator(im0, line_width=line_thickness, example=str(self.names))
+            annotator = Annotator(im0, line_width=line_thickness, example=str(model_b.names))
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(im.shape[-2:], det[:, :4], im0.shape).round()
@@ -107,7 +107,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 # Print results
                 for c in det[:, -1].unique():
                     n = (det[:, -1] == c).sum()  # detections per class
-                    s += f"{n} {self.names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                    s += f"{n} {model_b.names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
@@ -119,10 +119,10 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
-                        label = None if hide_labels else (self.names[c] if hide_conf else f'{self.names[c]} {conf:.2f}')
+                        label = None if hide_labels else (model_b.names[c] if hide_conf else f'{model_b.names[c]} {conf:.2f}')
                         annotator.box_label(xyxy, label, color=colors(c, True))
                     if save_crop:
-                        save_one_box(xyxy, imc, file=self.save_dir / 'crops' / self.names[c] / f'{p.stem}.jpg', BGR=True)
+                        save_one_box(xyxy, imc, file=save_dir / 'crops' / model_b.names[c] / f'{p.stem}.jpg', BGR=True)
 
             # Stream results
             im0 = annotator.result()
@@ -144,10 +144,10 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # Print results
     t = dt.t / seen * 1E3 # speeds per image
-    LOGGER.info(f'Speed: %.1fms per image at shape {(1, 3, *self.imgsz)}' % t)
+    LOGGER.info(f'Speed: %.1fms per image at shape {(1, 3, *model_b.imgsz)}' % t)
     if save_txt or save_img:
-        s = f"\n{len(list(self.save_dir.glob('labels/*.txt')))} labels saved to {self.save_dir / 'labels'}" if save_txt else ''
-        LOGGER.info(f"Results saved to {colorstr('bold', self.save_dir)}{s}")
+        s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
+        LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
     if update:
         strip_optimizer(weights_b[0])  # update model (to fix SourceChangeWarning)
 
