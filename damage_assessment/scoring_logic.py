@@ -32,9 +32,9 @@ def identify_walls(building, walls):
             building_walls.append(w)
     return building_walls
 
-def iou(box1, box2):
-    b1_x1, b1_y1, b1_x2, b1_y2 = box1
-    b2_x1, b2_y1, b2_x2, b2_y2 = box2
+def iow(build, wall):
+    b1_x1, b1_y1, b1_x2, b1_y2 = build
+    b2_x1, b2_y1, b2_x2, b2_y2 = wall
     w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1
     w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1
     print(b1_x1)
@@ -47,12 +47,13 @@ def iou(box1, box2):
             (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
     print(inter)
     # Union Area
-    union = w1 * h1 + w2 * h2 - inter
+    #union = w1 * h1 + w2 * h2 - inter
+    wall = w2 * h2
 
-    # IoU
-    iou = inter / union
-    print(iou)
-    return float(iou)
+    # IoW
+    iow = inter / wall
+    print(iow)
+    return iow
 
 
 def building_scoring(walls_damage):
