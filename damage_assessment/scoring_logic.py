@@ -25,6 +25,8 @@ def check_overlap(buildings):
 def identify_walls(building, walls):
     building_walls = []
     for w in walls:
+        print("building", building)
+        print("wall", w)
         if iou(building, w) > 0.5:
             building_walls.append(w)
     return building_walls

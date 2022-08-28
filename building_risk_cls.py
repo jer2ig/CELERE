@@ -119,6 +119,8 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         print("Unknown cls: ", cls)
 
                 check_overlap(buildings)
+                print(buildings)
+                print(walls)
 
                 for b in buildings:
                     building_walls = identify_walls(b, walls)
