@@ -140,7 +140,7 @@ class Classify:
             LOGGER.info(f"{s}{dt.dt * 1E3:.1f}ms")
 
         # Print results
-        t = tuple(x.t / seen * 1E3)  # speeds per image
+        t = tuple(dt.t / seen * 1E3)  # speeds per image
         LOGGER.info(f'Speed: %.1fms per image at shape {(1, 3, *self.imgsz)}' % t)
         if save_txt or save_img:
             s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''

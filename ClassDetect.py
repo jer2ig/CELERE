@@ -89,7 +89,6 @@ class Detection:
         project=ROOT / 'runs/detect',  # save results to project/name
         name='exp',  # save results to project/name
         exist_ok=False,  # existing project/name ok, do not increment
-        save_txt=False,  # save results to *.txt
         **kwargs,
 ):
         # Directories
