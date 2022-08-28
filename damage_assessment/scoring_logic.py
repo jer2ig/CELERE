@@ -28,7 +28,7 @@ def identify_walls(building, walls):
     for w in walls:
         print("building", building)
         print("wall", w)
-        if iou(building, w) > 0.5:
+        if iow(building, w) > 0.5:
             building_walls.append(w)
     return building_walls
 
