@@ -38,14 +38,16 @@ def iou(box1, box2):
     w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1
 
     # Intersection area
-    inter = (min(b1_x2, b2_x2) - max(b1_x1, b2_x1)).clamp(0) * \
-            (min(b1_y2, b2_y2) - max(b1_y1, b2_y1)).clamp(0)
+    inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * \
+            (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
 
     # Union Area
     union = w1 * h1 + w2 * h2 - inter
 
     # IoU
-    return inter / union
+    iou = inter / union
+    print(iou)
+    return float(iou)
 
 
 def building_scoring(walls_damage):
