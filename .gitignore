@@ -51,6 +51,7 @@ VOC/
 # Neural Network weights -----------------------------------------------------------------------------------------------
 *.weights
 *.pt
+!damage_assessment/*.pt
 *.pb
 *.onnx
 *.engine
