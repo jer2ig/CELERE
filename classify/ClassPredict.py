@@ -95,7 +95,7 @@ class Classify:
 
                 p = Path(p)  # to Path
                 save_path = str(save_dir / p.name)  # im.jpg
-                s += '%gx%g ' % im.shape[2:]  # print string
+                s += '%gx%g ' % im.shape[-2:]  # print string
                 annotator = Annotator(im0, example=str(self.names), pil=True)
 
                 # Print results
