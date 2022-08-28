@@ -26,8 +26,6 @@ def check_overlap(buildings):
 def identify_walls(building, walls):
     building_walls = []
     for w in walls:
-        print("building", building)
-        print("wall", w)
         if iow(building, w) > 0.5:
             building_walls.append(w)
     return building_walls
@@ -37,22 +35,16 @@ def iow(build, wall):
     b2_x1, b2_y1, b2_x2, b2_y2 = wall
     w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1
     w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1
-    print(b1_x1)
-    print(b1_y1)
-    print(w1)
-    print(h1)
 
     # Intersection area
     inter = (torch.min(b1_x2, b2_x2) - torch.max(b1_x1, b2_x1)).clamp(0) * \
             (torch.min(b1_y2, b2_y2) - torch.max(b1_y1, b2_y1)).clamp(0)
-    print(inter)
     # Union Area
     #union = w1 * h1 + w2 * h2 - inter
     wall = w2 * h2
 
     # IoW
     iow = inter / wall
-    print(iow)
     return iow
 
 

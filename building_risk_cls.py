@@ -119,15 +119,13 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         print("Unknown cls: ", cls)
 
                 check_overlap(buildings)
-                print(buildings)
-                print(walls)
 
                 for b in buildings:
                     building_walls = identify_walls(b, walls)
                     print(building_walls)
                     scores = []
                     for w in building_walls:
-                        wall = save_one_box(w, imc, file=save_dir / 'crops' / f'{str(crop_i.zfill(2))}.jpg')
+                        wall = save_one_box(w, imc, file=save_dir / 'crops' / f'{str(crop)_i.zfill(2)}.jpg')
                         crop_i +=1
 #                        prediction = model_w(wall)
                         prediction = 0
