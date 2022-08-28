@@ -43,7 +43,6 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
         device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         view_img=False,  # show results
         save_txt=False,  # save results to *.txt
-        save_conf=False,  # save confidences in --save-txt labels
         save_crop=False,  # save cropped prediction boxes
         nosave=False,  # do not save images/videos
         classes=None,  # filter by class: --class 0, or --class 0 2 3
@@ -55,8 +54,6 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
         name='exp',  # save results to project/name
         exist_ok=False,  # existing project/name ok, do not increment
         line_thickness=3,  # bounding box thickness (pixels)
-        hide_labels=False,  # hide labels
-        hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
         ):
@@ -116,31 +113,33 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     elif model_b.names[cls] == 'wall':
                         print("wall")
                         walls.append(xyxy)
+                    else:
+                        print("Unknown cls: ", cls)
 
                 check_overlap(buildings)
-"""
-                for b in buildings:
-                    walls_temp = identify_walls(b, walls)
-                    scores = []
-                    for w in walls_temp:
-                        wall = save_one_box(w, imc)
-                        prediction = model_w(wall)
-                        scores.append(prediction)
-                    score = building_scoring(walls_damage)
 
-                    if save_txt:  # Write to file
-                        xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (score.value, *xywh)  # label format
-                        with open(f'{txt_path}.txt', 'a') as f:
-                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
-
-                    if save_img or save_crop or view_img:  # Add bbox to image
-                        label = score.value
-                        annotator.box_label(xyxy, label, color=Damage.get_color(score))
-
-                    if save_crop:
-                        save_one_box(b, imc, file=save_dir / 'crops' / score.value / f'{p.stem}.jpg', BGR=True)
-"""
+#                for b in buildings:
+#                    walls_temp = identify_walls(b, walls)
+#                    scores = []
+#                    for w in walls_temp:
+#                        wall = save_one_box(w, imc)
+#                        prediction = model_w(wall)
+#                        scores.append(prediction)
+#                    score = building_scoring(walls_damage)
+#
+#                    if save_txt:  # Write to file
+#                        xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+#                        line = (score.value, *xywh)  # label format
+#                        with open(f'{txt_path}.txt', 'a') as f:
+#                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
+#
+#                    if save_img or save_crop or view_img:  # Add bbox to image
+#                        label = score.value
+#                        annotator.box_label(xyxy, label, color=Damage.get_color(score))
+#
+#                    if save_crop:
+#                        save_one_box(b, imc, file=save_dir / 'crops' / score.value / f'{p.stem}.jpg', BGR=True)
+#
             # Stream results
             im0 = annotator.result()
             if view_img:
