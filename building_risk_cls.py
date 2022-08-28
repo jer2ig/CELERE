@@ -189,8 +189,7 @@ def parse_opt():
 
 def main(opt):
     check_requirements(exclude=('tensorboard', 'thop'))
-    detector = Detection(**vars(opt))
-    detector.run(**vars(opt))
+    run(**vars(opt))
 
 
 if __name__ == "__main__":
