@@ -119,7 +119,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
                 check_overlap(buildings)
 
-#                for b in buildings:
+                for b in buildings:
 #                    walls_temp = identify_walls(b, walls)
 #                    scores = []
 #                    for w in walls_temp:
@@ -128,19 +128,20 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 #                        scores.append(prediction)
 #                    score = building_scoring(walls_damage)
 #
-#                    if save_txt:  # Write to file
-#                        xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-#                        line = (score.value, *xywh)  # label format
-#                        with open(f'{txt_path}.txt', 'a') as f:
-#                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
-#
-#                    if save_img or save_crop or view_img:  # Add bbox to image
-#                        label = score.value
-#                        annotator.box_label(xyxy, label, color=Damage.get_color(score))
-#
-#                    if save_crop:
-#                        save_one_box(b, imc, file=save_dir / 'crops' / score.value / f'{p.stem}.jpg', BGR=True)
-#
+                    score = Damage.RED
+                    if save_txt:  # Write to file
+                        xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                        line = (score.value, *xywh)  # label format
+                        with open(f'{txt_path}.txt', 'a') as f:
+                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
+
+                    if save_img or save_crop or view_img:  # Add bbox to image
+                        label = score.value
+                        annotator.box_label(xyxy, label, color=Damage.get_color(score))
+
+                    if save_crop:
+                        save_one_box(b, imc, file=save_dir / 'crops' / score.value / f'{p.stem}.jpg', BGR=True)
+
             # Stream results
             im0 = annotator.result()
             if view_img:
