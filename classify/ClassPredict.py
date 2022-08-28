@@ -26,134 +26,138 @@ from utils.torch_utils import select_device, smart_inference_mode
 
 
 @smart_inference_mode()
-def run(
-        weights=ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
-        source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
-        data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
-        imgsz=(224, 224),  # inference size (height, width)
-        device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
-        view_img=False,  # show results
-        save_txt=False,  # save results to *.txt
-        nosave=False,  # do not save images/videos
-        augment=False,  # augmented inference
-        visualize=False,  # visualize features
-        update=False,  # update all models
-        project=ROOT / 'runs/predict-cls',  # save results to project/name
-        name='exp',  # save results to project/name
-        exist_ok=False,  # existing project/name ok, do not increment
-        half=False,  # use FP16 half-precision inference
-        dnn=False,  # use OpenCV DNN for ONNX inference
-):
-    source = str(source)
-    save_img = not nosave and not source.endswith('.txt')  # save inference images
-    is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
-    is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
-    webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
-    if is_url and is_file:
-        source = check_file(source)  # download
+class Prediction:
+    def __init__(self,
+                 weights=ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
+                 device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
+                 data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
+                 imgsz=(224, 224),  # inference size (height, width)
+                 half=False,  # use FP16 half-precision inference
+                 dnn=False,  # use OpenCV DNN for ONNX inference
+                 **kwargs,
+                 ):
+        # Load model
+        self.device = select_device(device)
+        self.model = DetectMultiBackend(weights, device=device, dnn=dnn, data=data, fp16=half)
+        self.stride, self.names, self.pt = self.model.stride, self.model.names, self.model.pt
+        self.imgsz = check_img_size(imgsz, s=self.stride)
+        self.model.warmup(imgsz=(1, 3, *self.imgsz))  # warmup
 
-    # Directories
-    save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
-    (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+    def run(self,
+            weights=ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
+            source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
+            view_img=False,  # show results
+            save_txt=False,  # save results to *.txt
+            nosave=False,  # do not save images/videos
+            update=False,  # update all models
+            project=ROOT / 'runs/predict-cls',  # save results to project/name
+            name='exp',  # save results to project/name
+            exist_ok=False,  # existing project/name ok, do not increment
+            **kwargs,
+    ):
+        source = str(source)
+        save_img = not nosave and not source.endswith('.txt')  # save inference images
+        is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
+        is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
+        webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
+        if is_url and is_file:
+            source = check_file(source)  # download
 
-    # Load model
-    device = select_device(device)
-    model = DetectMultiBackend(weights, device=device, dnn=dnn, data=data, fp16=half)
-    stride, names, pt = model.stride, model.names, model.pt
-    imgsz = check_img_size(imgsz, s=stride)  # check image size
+        # Directories
+        save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
+        (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
-    # Dataloader
-    if webcam:
-        view_img = check_imshow()
-        cudnn.benchmark = True  # set True to speed up constant image size inference
-        dataset = LoadStreams(source, img_size=imgsz, transforms=classify_transforms(imgsz[0]))
-        bs = len(dataset)  # batch_size
-    else:
-        dataset = LoadImages(source, img_size=imgsz, transforms=classify_transforms(imgsz[0]))
-        bs = 1  # batch_size
-    vid_path, vid_writer = [None] * bs, [None] * bs
+        # Dataloader
+        if webcam:
+            view_img = check_imshow()
+            cudnn.benchmark = True  # set True to speed up constant image size inference
+            dataset = LoadStreams(source, img_size=self.imgsz, transforms=classify_transforms(self.imgsz[0]))
+            bs = len(dataset)  # batch_size
+        else:
+            dataset = LoadImages(source, img_size=self.imgsz, transforms=classify_transforms(self.imgsz[0]))
+            bs = 1  # batch_size
+        vid_path, vid_writer = [None] * bs, [None] * bs
 
-    # Run inference
-    model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
-    seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
-    for path, im, im0s, vid_cap, s in dataset:
-        with dt[0]:
-            im = torch.Tensor(im).to(device)
-            im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
-            if len(im.shape) == 3:
-                im = im[None]  # expand for batch dim
+        # Run inference
+        seen, windows, dt = 0, [], Profile()
+        for path, im, im0s, vid_cap, s in dataset:
+            with dt:
+                pred = self.inference(im)
 
+            # Process predictions
+            for i, prob in enumerate(pred):  # per image
+                seen += 1
+                if webcam:  # batch_size >= 1
+                    p, im0 = path[i], im0s[i].copy()
+                    s += f'{i}: '
+                else:
+                    p, im0 = path, im0s.copy()
+
+                p = Path(p)  # to Path
+                save_path = str(save_dir / p.name)  # im.jpg
+                s += '%gx%g ' % im.shape[2:]  # print string
+                annotator = Annotator(im0, example=str(names), pil=True)
+
+                # Print results
+                top5i = prob.argsort(0, descending=True)[:5].tolist()  # top 5 indices
+                s += f"{', '.join(f'{names[j]} {prob[j]:.2f}' for j in top5i)}, "
+
+                # Write results
+                if save_img or view_img:  # Add bbox to image
+                    text = '\n'.join(f'{prob[j]:.2f} {names[j]}' for j in top5i)
+                    annotator.text((32, 32), text, txt_color=(255, 255, 255))
+
+                # Stream results
+                im0 = annotator.result()
+                if view_img:
+                    if platform.system() == 'Linux' and p not in windows:
+                        windows.append(p)
+                        cv2.namedWindow(str(p), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
+                        cv2.resizeWindow(str(p), im0.shape[1], im0.shape[0])
+                    cv2.imshow(str(p), im0)
+                    cv2.waitKey(1)  # 1 millisecond
+
+                # Save results (image with detections)
+                if save_img:
+                    if dataset.mode == 'image':
+                        cv2.imwrite(save_path, im0)
+                    else:  # 'video' or 'stream'
+                        if vid_path[i] != save_path:  # new video
+                            vid_path[i] = save_path
+                            if isinstance(vid_writer[i], cv2.VideoWriter):
+                                vid_writer[i].release()  # release previous video writer
+                            if vid_cap:  # video
+                                fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                                w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                                h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            else:  # stream
+                                fps, w, h = 30, im0.shape[1], im0.shape[0]
+                            save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
+                            vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
+                        vid_writer[i].write(im0)
+
+            # Print time (inference-only)
+            LOGGER.info(f"{s}{dt.dt * 1E3:.1f}ms")
+
+        # Print results
+        t = tuple(x.t / seen * 1E3)  # speeds per image
+        LOGGER.info(f'Speed: %.1fms per image at shape {(1, 3, *self.imgsz)}' % t)
+        if save_txt or save_img:
+            s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
+            LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
+        if update:
+            strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
+
+    def inference(self, im):
+        im = torch.Tensor(im).to(self.device)
+        im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
+        if len(im.shape) == 3:
+            im = im[None]  # expand for batch dim
         # Inference
-        with dt[1]:
-            results = model(im)
-
+        results = self.model(im)
         # Post-process
-        with dt[2]:
-            pred = F.softmax(results, dim=1)  # probabilities
-
-        # Process predictions
-        for i, prob in enumerate(pred):  # per image
-            seen += 1
-            if webcam:  # batch_size >= 1
-                p, im0 = path[i], im0s[i].copy()
-                s += f'{i}: '
-            else:
-                p, im0 = path, im0s.copy()
-
-            p = Path(p)  # to Path
-            save_path = str(save_dir / p.name)  # im.jpg
-            s += '%gx%g ' % im.shape[2:]  # print string
-            annotator = Annotator(im0, example=str(names), pil=True)
-
-            # Print results
-            top5i = prob.argsort(0, descending=True)[:5].tolist()  # top 5 indices
-            s += f"{', '.join(f'{names[j]} {prob[j]:.2f}' for j in top5i)}, "
-
-            # Write results
-            if save_img or view_img:  # Add bbox to image
-                text = '\n'.join(f'{prob[j]:.2f} {names[j]}' for j in top5i)
-                annotator.text((32, 32), text, txt_color=(255, 255, 255))
-
-            # Stream results
-            im0 = annotator.result()
-            if view_img:
-                if platform.system() == 'Linux' and p not in windows:
-                    windows.append(p)
-                    cv2.namedWindow(str(p), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
-                    cv2.resizeWindow(str(p), im0.shape[1], im0.shape[0])
-                cv2.imshow(str(p), im0)
-                cv2.waitKey(1)  # 1 millisecond
-
-            # Save results (image with detections)
-            if save_img:
-                if dataset.mode == 'image':
-                    cv2.imwrite(save_path, im0)
-                else:  # 'video' or 'stream'
-                    if vid_path[i] != save_path:  # new video
-                        vid_path[i] = save_path
-                        if isinstance(vid_writer[i], cv2.VideoWriter):
-                            vid_writer[i].release()  # release previous video writer
-                        if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        else:  # stream
-                            fps, w, h = 30, im0.shape[1], im0.shape[0]
-                        save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
-                        vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    vid_writer[i].write(im0)
-
-        # Print time (inference-only)
-        LOGGER.info(f"{s}{dt[1].dt * 1E3:.1f}ms")
-
-    # Print results
-    t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
-    LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
-    if save_txt or save_img:
-        s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-        LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
-    if update:
-        strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
+        pred = F.softmax(results, dim=1)  # probabilities
+        return pred
 
 
 def parse_opt():
@@ -167,7 +171,6 @@ def parse_opt():
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
-    parser.add_argument('--visualize', action='store_true', help='visualize features')
     parser.add_argument('--update', action='store_true', help='update all models')
     parser.add_argument('--project', default=ROOT / 'runs/predict-cls', help='save results to project/name')
     parser.add_argument('--name', default='exp', help='save results to project/name')

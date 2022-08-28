@@ -119,7 +119,7 @@ class Detection:
         seen, windows, dt = 0, [], Profile()
         for path, im, im0s, vid_cap, s in dataset:
             with dt:
-                im, pred = self.inference(agnostic_nms, augment, classes, conf_thres, im, iou_thres, max_det, path,
+                pred = self.inference(agnostic_nms, augment, classes, conf_thres, im, iou_thres, max_det, path,
                                           visualize)
 
             # Second-stage classifier (optional)
@@ -217,7 +217,7 @@ class Detection:
         pred = self.model(im, augment=augment, visualize=visualize)
         # NMS
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
-        return im, pred
+        return pred
 
 
 def parse_opt():
