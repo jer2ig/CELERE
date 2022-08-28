@@ -57,6 +57,8 @@ class Detection:
                  exist_ok=False,  # existing project/name ok, do not increment
                  half=False,  # use FP16 half-precision inference
                  dnn=False,  # use OpenCV DNN for ONNX inference
+                 save_txt=False,  # save results to *.txt
+                 weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                  **kwargs,
                  ):
         # Directories
