@@ -38,7 +38,7 @@ class Classify:
                  ):
         # Load model
         self.device = select_device(device)
-        self.model = DetectMultiBackend(weights, device=device, dnn=dnn, data=data, fp16=half)
+        self.model = DetectMultiBackend(weights, device=self.device, dnn=dnn, data=data, fp16=half)
         self.stride, self.names, self.pt = self.model.stride, self.model.names, self.model.pt
         self.imgsz = check_img_size(imgsz, s=self.stride)
         self.model.warmup(imgsz=(1, 3, *self.imgsz))  # warmup
@@ -96,15 +96,15 @@ class Classify:
                 p = Path(p)  # to Path
                 save_path = str(save_dir / p.name)  # im.jpg
                 s += '%gx%g ' % im.shape[2:]  # print string
-                annotator = Annotator(im0, example=str(names), pil=True)
+                annotator = Annotator(im0, example=str(self.names), pil=True)
 
                 # Print results
                 top5i = prob.argsort(0, descending=True)[:5].tolist()  # top 5 indices
-                s += f"{', '.join(f'{names[j]} {prob[j]:.2f}' for j in top5i)}, "
+                s += f"{', '.join(f'{self.names[j]} {prob[j]:.2f}' for j in top5i)}, "
 
                 # Write results
                 if save_img or view_img:  # Add bbox to image
-                    text = '\n'.join(f'{prob[j]:.2f} {names[j]}' for j in top5i)
+                    text = '\n'.join(f'{prob[j]:.2f} {self.names[j]}' for j in top5i)
                     annotator.text((32, 32), text, txt_color=(255, 255, 255))
 
                 # Stream results
@@ -150,7 +150,7 @@ class Classify:
 
     def inference(self, im):
         im = torch.Tensor(im).to(self.device)
-        im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
+        im = im.half() if self.model.fp16 else im.float()  # uint8 to fp16/32
         if len(im.shape) == 3:
             im = im[None]  # expand for batch dim
         # Inference
