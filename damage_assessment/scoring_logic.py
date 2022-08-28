@@ -25,9 +25,25 @@ def check_overlap(buildings):
 def identify_walls(building, walls):
     building_walls = []
     for w in walls:
-        if bbox_iou(building, w) > 0.5:
+        if iou(building, w) > 0.5:
             building_walls.append(w)
     return building_walls
+
+def iou(box1, box2):
+    b1_x1, b1_y1, b1_x2, b1_y2 = box1
+    b2_x1, b2_y1, b2_x2, b2_y2 = box2
+    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1
+    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1
+
+    # Intersection area
+    inter = (min(b1_x2, b2_x2) - max(b1_x1, b2_x1)).clamp(0) * \
+            (min(b1_y2, b2_y2) - max(b1_y1, b2_y1)).clamp(0)
+
+    # Union Area
+    union = w1 * h1 + w2 * h2 - inter
+
+    # IoU
+    return inter / union
 
 
 def building_scoring(walls_damage):
