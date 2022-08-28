@@ -1,4 +1,5 @@
 from enum import Enum
+import collections
 
 class Damage(Enum):
     GREEN = "green"
@@ -8,9 +9,9 @@ class Damage(Enum):
     @classmethod
     def get_color(cls, input):
         if input == Damage.RED:
-            return (255,0,0)
+            return (0,0,255)
         if input == Damage.AMBER:
-            return (255,191,0)
+            return (0,191,255)
         if input == Damage.GREEN:
             return (0,255,0)
         return (255,255,255)
@@ -23,4 +24,9 @@ def identify_walls(building, walls):
     pass
 
 def building_scoring(walls_damage):
-    pass
+    if 1 not in walls_damage:
+        return Damage.GREEN
+    counts  = collections.Counter(walls_damage)
+    if counts[1] > 1 or counts[1] / counts[0] > 1/4:
+        return Damage.RED
+    return Damage.AMBER

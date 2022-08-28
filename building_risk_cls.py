@@ -126,9 +126,9 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 #                        wall = save_one_box(w, imc)
 #                        prediction = model_w(wall)
 #                        scores.append(prediction)
-#                    score = building_scoring(walls_damage)
-#
-                    score = Damage.RED
+                    walls_damage = [0,1,0,1]
+                    score = building_scoring(walls_damage)
+
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
                         line = (score.value, *xywh)  # label format
@@ -137,7 +137,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
                     if save_img or save_crop or view_img:  # Add bbox to image
                         label = score.value
-                        annotator.box_label(xyxy, label, color=Damage.get_color(score))
+                        annotator.box_label(b, label, color=Damage.get_color(score))
 
                     if save_crop:
                         save_one_box(b, imc, file=save_dir / 'crops' / score.value / f'{p.stem}.jpg', BGR=True)
