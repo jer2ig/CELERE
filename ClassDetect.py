@@ -136,7 +136,7 @@ class Detection:
                 p = Path(p)  # to Path
                 save_path = str(self.save_dir / p.name)  # im.jpg
                 txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
-                s += '%gx%g ' % im.shape[2:]  # print string
+                s += '%gx%g ' % im.shape[-2:]  # print string
                 gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
                 imc = im0.copy() if save_crop else im0  # for save_crop
                 annotator = Annotator(im0, line_width=line_thickness, example=str(self.names))
