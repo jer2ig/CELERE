@@ -52,18 +52,11 @@ class Detection:
                  data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
                  imgsz=(640, 640),  # inference size (height, width)
                  device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
-                 project=ROOT / 'runs/detect',  # save results to project/name
-                 name='exp',  # save results to project/name
-                 exist_ok=False,  # existing project/name ok, do not increment
                  half=False,  # use FP16 half-precision inference
                  dnn=False,  # use OpenCV DNN for ONNX inference
-                 save_txt=False,  # save results to *.txt
                  weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
                  **kwargs,
                  ):
-        # Directories
-        self.save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)
-        (self.save_dir / 'labels' if save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
         # Load model
         self.device = select_device(device)
@@ -93,9 +86,17 @@ class Detection:
         line_thickness=3,  # bounding box thickness (pixels)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
+        project=ROOT / 'runs/detect',  # save results to project/name
+        name='exp',  # save results to project/name
+        exist_ok=False,  # existing project/name ok, do not increment
+        save_txt=False,  # save results to *.txt
         **kwargs,
 ):
+        # Directories
+        self.save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)
+        (self.save_dir / 'labels' if save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make dir
         source = str(source)
+
         save_img = not nosave and not source.endswith('.txt')  # save inference images
         is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
         is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
