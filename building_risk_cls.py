@@ -32,8 +32,7 @@ from utils.torch_utils import select_device, smart_inference_mode
 from ClassDetect import Detection
 
 
-def run(self,
-        weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
+def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
         source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
@@ -155,7 +154,7 @@ def run(self,
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights-b', nargs='+', type=str, default=ROOT / 'yolov5s.pt', help='weights for building model')
+    parser.add_argument('--weights-b', nargs='+', type=str, default=ROOT / 'damage_assessment/buildings.pt', help='weights for building model')
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob, 0 for webcam')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
