@@ -60,6 +60,7 @@ class Detection:
 
         # Load model
         self.device = select_device(device)
+        print(weights)
         self.model = DetectMultiBackend(weights, device=self.device, dnn=dnn, data=data, fp16=half)
         self.stride, self.names, self.pt = self.model.stride, self.model.names, self.model.pt
         self.imgsz = check_img_size(imgsz, s=self.stride)
