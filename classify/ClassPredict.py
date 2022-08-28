@@ -26,7 +26,7 @@ from utils.torch_utils import select_device, smart_inference_mode
 
 
 @smart_inference_mode()
-class Prediction:
+class Classify:
     def __init__(self,
                  weights=ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
                  device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -185,7 +185,8 @@ def parse_opt():
 
 def main(opt):
     check_requirements(exclude=('tensorboard', 'thop'))
-    run(**vars(opt))
+    classifier = Classify(**vars(opt))
+    classifier.run(**vars(opt))
 
 
 if __name__ == "__main__":
