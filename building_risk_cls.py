@@ -107,6 +107,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 walls = []
                 # Obtain buildings and walls
                 for *xyxy, conf, cls in reversed(det):
+                    cls = int(cls)
                     if model_b.names[cls] == 'house':
                         print("building")
                         buildings.append(xyxy)
