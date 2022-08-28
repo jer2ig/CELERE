@@ -69,9 +69,9 @@ class Detection:
         self.device = select_device(device)
         self.model = DetectMultiBackend(weights, device=self.device, dnn=dnn, data=data, fp16=half)
         self.stride, self.names, self.pt = self.model.stride, self.model.names, self.model.pt
-        self.imgsz = check_img_size(imgsz, s=stride)
+        self.imgsz = check_img_size(imgsz, s=self.stride)
 
-        self.model.warmup(imgsz=(1 if pt else bs, 3, *self.imgsz))  # warmup
+        self.model.warmup(imgsz=(1, 3, *self.imgsz))  # warmup
 
 
     def run(self,
