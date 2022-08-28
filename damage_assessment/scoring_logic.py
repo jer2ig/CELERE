@@ -7,11 +7,11 @@ class Damage(Enum):
 
     @classmethod
     def get_color(cls, input):
-        if input == RED:
+        if input == Damage.RED:
             return (255,0,0)
-        if input == AMBER:
+        if input == Damage.AMBER:
             return (255,191,0)
-        if input == GREEN:
+        if input == Damage.GREEN:
             return (0,255,0)
         return (255,255,255)
 
