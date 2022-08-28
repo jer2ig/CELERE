@@ -335,7 +335,7 @@ def check_version(current='0.0.0', minimum='0.0.0', name='version ', pinned=Fals
     # Check version vs. required version
     current, minimum = (pkg.parse_version(x) for x in (current, minimum))
     result = (current == minimum) if pinned else (current >= minimum)  # bool
-    s = f'{name}{minimum} required by YOLOv5, but {name}{current} is currently installed'  # string
+    s = f'{name}{minimum} required, but {name}{current} is currently installed'  # string
     if hard:
         assert result, s  # assert min requirements met
     if verbose and not result:
@@ -345,7 +345,7 @@ def check_version(current='0.0.0', minimum='0.0.0', name='version ', pinned=Fals
 
 @TryExcept()
 def check_requirements(requirements=ROOT / 'requirements.txt', exclude=(), install=True, cmds=()):
-    # Check installed dependencies meet YOLOv5 requirements (pass *.txt file or list of packages)
+    # Check installed dependencies meet requirements (pass *.txt file or list of packages)
     prefix = colorstr('red', 'bold', 'requirements:')
     check_python()  # check python version
     if isinstance(requirements, (str, Path)):  # requirements.txt file
@@ -361,7 +361,7 @@ def check_requirements(requirements=ROOT / 'requirements.txt', exclude=(), insta
         try:
             pkg.require(r)
         except Exception:  # DistributionNotFound or VersionConflict if requirements not met
-            s = f"{prefix} {r} not found and is required by YOLOv5"
+            s = f"{prefix} {r} not found and is required"
             if install and AUTOINSTALL:  # check environment variable
                 LOGGER.info(f"{s}, attempting auto-update...")
                 try:
