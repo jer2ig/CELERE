@@ -34,7 +34,7 @@ import torch.backends.cudnn as cudnn
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
-if str(ROOT) not in sys.save_dir:
+if str(ROOT) not in sys.path:
     sys.save_dir.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.save_dir.relpath(ROOT, Path.cwd()))  # relative
 
