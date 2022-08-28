@@ -94,6 +94,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy()   # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(model_b.names))
+            crop_i = 0
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(im.shape[-2:], det[:, :4], im0.shape).round()
@@ -120,12 +121,14 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 check_overlap(buildings)
 
                 for b in buildings:
-#                    walls_temp = identify_walls(b, walls)
-#                    scores = []
-#                    for w in walls_temp:
-#                        wall = save_one_box(w, imc)
+                    building_walls = identify_walls(b, walls)
+                    scores = []
+                    for w in building_walls:
+                        wall = save_one_box(w, imc, file=save_dir / 'crops' / f'{str(crop_i.zfill(2))}.jpg')
+                        crop_i +=1
 #                        prediction = model_w(wall)
-#                        scores.append(prediction)
+                        prediction = 0
+                        scores.append(prediction)
                     walls_damage = [0,1,0,1]
                     score = building_scoring(walls_damage)
 

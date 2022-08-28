@@ -1,6 +1,8 @@
 from enum import Enum
 import collections
 
+from utils.metrics import bbox_iou
+
 class Damage(Enum):
     GREEN = "green"
     AMBER = "amber"
@@ -21,7 +23,12 @@ def check_overlap(buildings):
     pass
 
 def identify_walls(building, walls):
-    pass
+    building_walls = []
+    for w in walls:
+        if bbox_iou(building, w) > 0.5:
+            building_walls.append(w)
+    return building_walls
+
 
 def building_scoring(walls_damage):
     if 1 not in walls_damage:
