@@ -34,9 +34,9 @@ import torch.backends.cudnn as cudnn
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
-if str(ROOT) not in sys.path:
-    sys.path.append(str(ROOT))  # add ROOT to PATH
-ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
+if str(ROOT) not in sys.save_dir:
+    sys.save_dir.append(str(ROOT))  # add ROOT to PATH
+ROOT = Path(os.save_dir.relpath(ROOT, Path.cwd()))  # relative
 
 from models.common import DetectMultiBackend
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
@@ -48,15 +48,36 @@ from utils.torch_utils import select_device, smart_inference_mode
 
 @smart_inference_mode()
 class Detection:
+    def __init__(self,
+                 data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
+                 imgsz=(640, 640),  # inference size (height, width)
+                 device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
+                 project=ROOT / 'runs/detect',  # save results to project/name
+                 name='exp',  # save results to project/name
+                 exist_ok=False,  # existing project/name ok, do not increment
+                 half=False,  # use FP16 half-precision inference
+                 dnn=False,  # use OpenCV DNN for ONNX inference
+                 **kwargs,
+                 ):
+        # Directories
+        self.save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)
+        (self.save_dir / 'labels' if save_txt else self.save_dir).mkdir(parents=True, exist_ok=True)  # make dir
+
+        # Load model
+        self.device = select_device(device)
+        self.model = DetectMultiBackend(weights, device=self.device, dnn=dnn, data=data, fp16=half)
+        self.stride, self.names, self.pt = self.model.stride, self.model.names, self.model.pt
+        self.imgsz = check_img_size(imgsz, s=stride)
+
+        self.model.warmup(imgsz=(1 if pt else bs, 3, *self.imgsz))  # warmup
+
+
     def run(self,
         weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         source=ROOT / 'data/images',  # file/dir/URL/glob, 0 for webcam
-        data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
-        imgsz=(640, 640),  # inference size (height, width)
         conf_thres=0.25,  # confidence threshold
         iou_thres=0.45,  # NMS IOU threshold
         max_det=1000,  # maximum detections per image
-        device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
         view_img=False,  # show results
         save_txt=False,  # save results to *.txt
         save_conf=False,  # save confidences in --save-txt labels
@@ -67,14 +88,10 @@ class Detection:
         augment=False,  # augmented inference
         visualize=False,  # visualize features
         update=False,  # update all models
-        project=ROOT / 'runs/detect',  # save results to project/name
-        name='exp',  # save results to project/name
-        exist_ok=False,  # existing project/name ok, do not increment
         line_thickness=3,  # bounding box thickness (pixels)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
-        half=False,  # use FP16 half-precision inference
-        dnn=False,  # use OpenCV DNN for ONNX inference
+        **kwargs,
 ):
         source = str(source)
         save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -84,46 +101,23 @@ class Detection:
         if is_url and is_file:
             source = check_file(source)  # download
 
-        # Directories
-        save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
-        (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
-
-        # Load model
-        device = select_device(device)
-        model = DetectMultiBackend(weights, device=device, dnn=dnn, data=data, fp16=half)
-        stride, names, pt = model.stride, model.names, model.pt
-        imgsz = check_img_size(imgsz, s=stride)  # check image size
-
         # Dataloader
         if webcam:
             view_img = check_imshow()
             cudnn.benchmark = True  # set True to speed up constant image size inference
-            dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
+            dataset = LoadStreams(source, img_size=self.imgsz, stride=self.stride, auto=self.pt)
             bs = len(dataset)  # batch_size
         else:
-            dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
+            dataset = LoadImages(source, img_size=self.imgsz, stride=self.stride, auto=self.pt)
             bs = 1  # batch_size
         vid_path, vid_writer = [None] * bs, [None] * bs
 
         # Run inference
-        model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
-        seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
+        seen, windows, dt = 0, [], Profile()
         for path, im, im0s, vid_cap, s in dataset:
-            with dt[0]:
-                im = torch.from_numpy(im).to(device)
-                im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
-                im /= 255  # 0 - 255 to 0.0 - 1.0
-                if len(im.shape) == 3:
-                    im = im[None]  # expand for batch dim
-
-            # Inference
-            with dt[1]:
-                visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
-                pred = model(im, augment=augment, visualize=visualize)
-
-            # NMS
-            with dt[2]:
-                pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
+            with dt:
+                im, pred = self.inference(agnostic_nms, augment, classes, conf_thres, im, iou_thres, max_det, path,
+                                          visualize)
 
             # Second-stage classifier (optional)
             # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
@@ -138,12 +132,12 @@ class Detection:
                     p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
                 p = Path(p)  # to Path
-                save_path = str(save_dir / p.name)  # im.jpg
-                txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
+                save_path = str(self.save_dir / p.name)  # im.jpg
+                txt_path = str(self.save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
                 s += '%gx%g ' % im.shape[2:]  # print string
                 gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
                 imc = im0.copy() if save_crop else im0  # for save_crop
-                annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+                annotator = Annotator(im0, line_width=line_thickness, example=str(self.names))
                 if len(det):
                     # Rescale boxes from img_size to im0 size
                     det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
@@ -151,7 +145,7 @@ class Detection:
                     # Print results
                     for c in det[:, -1].unique():
                         n = (det[:, -1] == c).sum()  # detections per class
-                        s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                        s += f"{n} {self.names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                     # Write results
                     for *xyxy, conf, cls in reversed(det):
@@ -163,10 +157,10 @@ class Detection:
 
                         if save_img or save_crop or view_img:  # Add bbox to image
                             c = int(cls)  # integer class
-                            label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                            label = None if hide_labels else (self.names[c] if hide_conf else f'{self.names[c]} {conf:.2f}')
                             annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
-                            save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
+                            save_one_box(xyxy, imc, file=self.save_dir / 'crops' / self.names[c] / f'{p.stem}.jpg', BGR=True)
 
                 # Stream results
                 im0 = annotator.result()
@@ -198,16 +192,29 @@ class Detection:
                         vid_writer[i].write(im0)
 
             # Print time (inference-only)
-            LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
+            LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt.dt * 1E3:.1f}ms")
 
         # Print results
-        t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
-        LOGGER.info(f'Speed: %.1fms pre-process, %.1fms inference, %.1fms NMS per image at shape {(1, 3, *imgsz)}' % t)
+        t = dt.t / seen * 1E3 # speeds per image
+        LOGGER.info(f'Speed: %.1fms per image at shape {(1, 3, *self.imgsz)}' % t)
         if save_txt or save_img:
-            s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
-            LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
+            s = f"\n{len(list(self.save_dir.glob('labels/*.txt')))} labels saved to {self.save_dir / 'labels'}" if save_txt else ''
+            LOGGER.info(f"Results saved to {colorstr('bold', self.save_dir)}{s}")
         if update:
             strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
+
+    def inference(self, agnostic_nms, augment, classes, conf_thres, im, iou_thres, max_det, path, visualize):
+        im = torch.from_numpy(im).to(self.device)
+        im = im.half() if self.model.fp16 else im.float()  # uint8 to fp16/32
+        im /= 255  # 0 - 255 to 0.0 - 1.0
+        if len(im.shape) == 3:
+            im = im[None]  # expand for batch dim
+        # Inference
+        visualize = increment_path(self.save_dir / Path(path).stem, mkdir=True) if visualize else False
+        pred = self.model(im, augment=augment, visualize=visualize)
+        # NMS
+        pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
+        return im, pred
 
 
 def parse_opt():
@@ -246,7 +253,7 @@ def parse_opt():
 
 def main(opt):
     check_requirements(exclude=('tensorboard', 'thop'))
-    dectector = Detection()
+    detector = Detection(**vars(opt))
     detector.run(**vars(opt))
 
 
