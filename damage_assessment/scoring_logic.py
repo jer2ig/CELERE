@@ -71,7 +71,7 @@ def evaluate_wall(wall, damages, model_d):
             return 2
         if model_d.names[cls] != 'superficial':
             percent_dam += iow(xyxy, wall)
-    if percent_dam > 0.5
+    if percent_dam > 0.5:
         return 2
     if percent_dam < 0.01:
         return 0
