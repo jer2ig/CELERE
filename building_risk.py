@@ -137,6 +137,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
                                                            visualize)
                             prediction = evaluate_wall(w, prediction, model_d)
+                            print(prediction)
                         else:
                             prediction = model_d.inference(wall)
                             prediction = int(torch.argmax(prediction))
