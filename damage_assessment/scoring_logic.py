@@ -59,7 +59,7 @@ def building_scoring_det(walls_damage):
     if 2 in walls_damage:
         return Damage.RED
     counts  = collections.Counter(walls_damage)
-    if counts[1] > 1 or counts[1] / counts[0] > 1/4:
+    if counts[1] > 1 or counts[1] > 4*counts[0] :
         return Damage.RED
     return Damage.AMBER
 
