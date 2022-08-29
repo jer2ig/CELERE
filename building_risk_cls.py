@@ -134,8 +134,8 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         print(prediction)
                         prediction = int(torch.argmax(prediction))
                         print(prediction)
-                        walls_damage.append(prediction)
-                    score = building_scoring(walls_damage)
+                        scores.append(prediction)
+                    score = building_scoring(scores)
 
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
