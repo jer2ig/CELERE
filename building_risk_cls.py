@@ -30,7 +30,7 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 from ClassDetect import Detection
-from ClassPredict import Prediction
+from classify.ClassPredict import Classify
 from damage_assessment.scoring_logic import Damage, check_overlap, identify_walls, building_scoring
 
 
@@ -69,7 +69,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # Building detection model
     model_b = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_b)
-    model_d = Prediction(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_w)
+    model_d = Classify(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_w)
 
     # Dataloader
     dataset = LoadImages(source, img_size=model_b.imgsz, stride=model_b.stride, auto=model_b.pt)
