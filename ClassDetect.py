@@ -221,6 +221,7 @@ class Detection:
         return pred
 
     def transform(self,im0):
+        cv2.cvtColor(np.array(im0), cv2.COLOR_RGB2BGR)
         im = letterbox(im0, self.imgsz, stride=self.stride, auto=self.pt)[0]  # padded resize
         im = im.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         return np.ascontiguousarray(im)  # contiguous
