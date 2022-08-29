@@ -54,6 +54,7 @@ def building_scoring_cls(walls_damage):
     return Damage.AMBER
 
 def building_scoring_det(walls_damage):
+    print(walls_damage)
     if 1 and 2 not in walls_damage:
         return Damage.GREEN
     if 2 in walls_damage:
