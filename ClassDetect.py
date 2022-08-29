@@ -220,7 +220,7 @@ class Detection:
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
         return pred
 
-    def transforms(self,im0):
+    def transform(self,im0):
         im = letterbox(im0, self.img_size, stride=self.stride, auto=self.auto)[0]  # padded resize
         im = im.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         return np.ascontiguousarray(im)  # contiguous
