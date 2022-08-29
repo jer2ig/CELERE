@@ -31,7 +31,7 @@ from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 from ClassDetect import Detection
 from classify.ClassPredict import Classify
-from damage_assessment.scoring_logic import (Damage, check_overlap, identify_walls, building_scoring_cls,
+from damage_assessment.scoring_logic import (Damage, identify_walls, building_scoring_cls,
                                              building_scoring_det, evaluate_wall)
 
 
