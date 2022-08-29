@@ -130,7 +130,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         wall = save_one_box(w, imc, file=save_dir / 'crops' / f'{str(crop_i).zfill(2)}.jpg')
                         crop_i +=1
                         wall = model_d.transform(wall)
-                        prediction = model_d(wall)
+                        prediction = model_d.inference(wall)
                         print(prediction)
                         prediction = int(torch.argmax(prediction))
                         print(prediction)
