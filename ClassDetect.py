@@ -221,7 +221,7 @@ class Detection:
         return pred
 
     def transform(self,im0):
-        im = letterbox(im0, self.img_size, stride=self.stride, auto=self.auto)[0]  # padded resize
+        im = letterbox(im0, self.imgsz, stride=self.stride, auto=self.auto)[0]  # padded resize
         im = im.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         return np.ascontiguousarray(im)  # contiguous
 
