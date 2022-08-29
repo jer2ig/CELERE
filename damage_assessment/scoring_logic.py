@@ -55,10 +55,10 @@ def building_scoring_cls(walls_damage):
 
 def building_scoring_det(walls_damage):
     print(walls_damage)
-    if 1 and 2 not in walls_damage:
-        return Damage.GREEN
     if 2 in walls_damage:
         return Damage.RED
+    if 1 not in walls_damage:
+        return Damage.GREEN
     counts  = collections.Counter(walls_damage)
     if counts[1] > 1 or counts[1] > 4*counts[0]:
         return Damage.RED
