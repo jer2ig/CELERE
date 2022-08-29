@@ -30,10 +30,12 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 from ClassDetect import Detection
+from ClassPredict import Prediction
 from damage_assessment.scoring_logic import Damage, check_overlap, identify_walls, building_scoring
 
 
 def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
+        weights_d=ROOT / 'yolov5s.pt',  # model.pt path(s)
         source=ROOT / 'data/images',  # file/dir
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
@@ -67,6 +69,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # Building detection model
     model_b = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_b)
+    model_d = Prediction(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_w)
 
     # Dataloader
     dataset = LoadImages(source, img_size=model_b.imgsz, stride=model_b.stride, auto=model_b.pt)
@@ -122,15 +125,16 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
                 for b in buildings:
                     building_walls = identify_walls(b, walls)
-                    print(building_walls)
                     scores = []
                     for w in building_walls:
                         wall = save_one_box(w, imc, file=save_dir / 'crops' / f'{str(crop_i).zfill(2)}.jpg')
                         crop_i +=1
-#                        prediction = model_w(wall)
-                        prediction = 0
-                        scores.append(prediction)
-                    walls_damage = [0,1,0,1]
+                        wall = model_d.transform(wall)
+                        prediction = model_d(wall)
+                        print(prediction)
+                        prediction = int(torch.argmax(prediction))
+                        print(prediction)
+                        walls_damage.append(prediction)
                     score = building_scoring(walls_damage)
 
                     if save_txt:  # Write to file
@@ -177,6 +181,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights-b', nargs='+', type=str, default=ROOT / 'damage_assessment/buildings.pt', help='weights for building model')
+    parser.add_argument('--weights-d', nargs='+', type=str, default=ROOT / 'damage_assessment/damage_classify.pt', help='weights for damage_classification')
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')

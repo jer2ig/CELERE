@@ -42,6 +42,7 @@ class Classify:
         self.stride, self.names, self.pt = self.model.stride, self.model.names, self.model.pt
         self.imgsz = check_img_size(imgsz, s=self.stride)
         self.model.warmup(imgsz=(1, 3, *self.imgsz))  # warmup
+        self.transforms=classify_transforms(self.imgsz[0])
 
     def run(self,
             weights=ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
@@ -158,6 +159,9 @@ class Classify:
         # Post-process
         pred = F.softmax(results, dim=1)  # probabilities
         return pred
+
+    def transform(self, img):
+        return self.transforms(img)
 
 
 def parse_opt():
