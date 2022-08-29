@@ -23,6 +23,9 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
                            increment_path, print_args, strip_optimizer)
 from utils.plots import Annotator
 from utils.torch_utils import select_device, smart_inference_mode
+import torchvision.transforms as T
+IMAGENET_MEAN = 0.485, 0.456, 0.406  # RGB mean
+IMAGENET_STD = 0.229, 0.224, 0.225  # RGB standard deviation
 
 
 @smart_inference_mode()
@@ -42,7 +45,8 @@ class Classify:
         self.stride, self.names, self.pt = self.model.stride, self.model.names, self.model.pt
         self.imgsz = check_img_size(imgsz, s=self.stride)
         self.model.warmup(imgsz=(1, 3, *self.imgsz))  # warmup
-        self.transforms=classify_transforms(self.imgsz[0])
+        size = 224
+        self.transforms =  T.Compose([T.Resize(size), T.CenterCrop(size), T.Normalize(IMAGENET_MEAN, IMAGENET_STD)])
 
     def run(self,
             weights=ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
