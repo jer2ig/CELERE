@@ -49,7 +49,7 @@ def building_scoring_cls(walls_damage):
     if 1 not in walls_damage:
         return Damage.GREEN
     counts  = collections.Counter(walls_damage)
-    if counts[1] > 1 or counts[1] / counts[0] > 1/4:
+    if counts[1] > 1  or counts[1] > 4*counts[0]:
         return Damage.RED
     return Damage.AMBER
 
@@ -59,15 +59,15 @@ def building_scoring_det(walls_damage):
     if 2 in walls_damage:
         return Damage.RED
     counts  = collections.Counter(walls_damage)
-    if counts[1] > 1 or counts[1] > 4*counts[0] :
+    if counts[1] > 1 or counts[1] > 4*counts[0]:
         return Damage.RED
     return Damage.AMBER
 
 def evaluate_wall(wall, damages, model_d):
+    print(damages)
     damages=damages[0]
     if len(damages) ==0:
         return 0
-    print(damages)
     percent_dam = 0
     for *xyxy, conf, cls in reversed(damages):
         cls = int(cls)
