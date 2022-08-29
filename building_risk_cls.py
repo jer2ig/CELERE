@@ -69,7 +69,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # Building detection model
     model_b = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_b)
-    model_d = Classify(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_w)
+    model_d = Classify(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
 
     # Dataloader
     dataset = LoadImages(source, img_size=model_b.imgsz, stride=model_b.stride, auto=model_b.pt)
