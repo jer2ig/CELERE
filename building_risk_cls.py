@@ -31,11 +31,13 @@ from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 from ClassDetect import Detection
 from classify.ClassPredict import Classify
-from damage_assessment.scoring_logic import Damage, check_overlap, identify_walls, building_scoring
+from damage_assessment.scoring_logic import (Damage, check_overlap, identify_walls, building_scoring_cls,
+                                             building_scoring_det, evaluate_wall)
 
 
 def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
         weights_d=ROOT / 'yolov5s.pt',  # model.pt path(s)
+        use_dam_detection=False,
         source=ROOT / 'data/images',  # file/dir
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
@@ -69,7 +71,10 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # Building detection model
     model_b = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_b)
-    model_d = Classify(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
+    if use_dam_detection:
+        model_d = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
+    else:
+        model_d = Classify(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
 
     # Dataloader
     dataset = LoadImages(source, img_size=model_b.imgsz, stride=model_b.stride, auto=model_b.pt)
@@ -131,11 +136,16 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         crop_i +=1
                         wall = model_d.transform(wall)
                         prediction = model_d.inference(wall)
-                        print(prediction)
-                        prediction = int(torch.argmax(prediction))
-                        print(prediction)
+                        if use_dam_detection:
+                            prediction = evaluate_wall(w, prediction)
+                        else:
+                            prediction = int(torch.argmax(prediction))
+                            print(prediction)
                         scores.append(prediction)
-                    score = building_scoring(scores)
+                    if use_dam_detection:
+                        score = building_scoring_det(scores)
+                    else:
+                        score = building_scoring_cls(scores)
 
                     if save_txt:  # Write to file
                         xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
@@ -182,6 +192,7 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights-b', nargs='+', type=str, default=ROOT / 'damage_assessment/buildings.pt', help='weights for building model')
     parser.add_argument('--weights-d', nargs='+', type=str, default=ROOT / 'damage_assessment/damage_classify.pt', help='weights for damage_classification')
+    parser.add_argument('--use-dam-detection', action='store_true', help='use damage detection instead of classifcation')
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')

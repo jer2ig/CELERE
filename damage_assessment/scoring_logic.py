@@ -48,10 +48,16 @@ def iow(build, wall):
     return iow
 
 
-def building_scoring(walls_damage):
+def building_scoring_cls(walls_damage):
     if 1 not in walls_damage:
         return Damage.GREEN
     counts  = collections.Counter(walls_damage)
     if counts[1] > 1 or counts[1] / counts[0] > 1/4:
         return Damage.RED
     return Damage.AMBER
+
+def building_scoring_det(walls_damage):
+    pass
+
+def evaluate_wall(wall, damages):
+    pass

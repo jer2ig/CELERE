@@ -28,6 +28,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+import numpy as np
 
 import torch
 import torch.backends.cudnn as cudnn
@@ -40,6 +41,7 @@ ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 from models.common import DetectMultiBackend
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
+from utils.augmentations import letterbox
 from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
                            increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors, save_one_box
@@ -217,6 +219,11 @@ class Detection:
         # NMS
         pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
         return pred
+
+    def transforms(self,im0):
+        im = letterbox(im0, self.img_size, stride=self.stride, auto=self.auto)[0]  # padded resize
+        im = im.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
+        return np.ascontiguousarray(im)  # contiguous
 
 
 def parse_opt():
