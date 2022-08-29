@@ -64,8 +64,9 @@ def building_scoring_det(walls_damage):
     return Damage.AMBER
 
 def evaluate_wall(wall, damages, model_d):
-    if not len(damages):
+    if len(damages) == 0:
         return 0
+    print(damages)
     percent_dam = 0
     for *xyxy, conf, cls in reversed(damages):
         cls = int(cls)
