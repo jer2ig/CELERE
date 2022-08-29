@@ -133,10 +133,12 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         wall = save_one_box(w, imc, file=save_dir / 'crops' / f'{str(crop_i).zfill(2)}.jpg')
                         crop_i +=1
                         wall = model_d.transform(wall)
-                        prediction = model_d.inference(wall)
                         if use_dam_detection:
+                            prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
+                                                           visualize)
                             prediction = evaluate_wall(w, prediction, model_d)
                         else:
+                            prediction = model_d.inference(wall)
                             prediction = int(torch.argmax(prediction))
                             print(prediction)
                         scores.append(prediction)
