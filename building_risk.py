@@ -126,8 +126,6 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     else:
                         print("Unknown cls: ", cls)
 
-                check_overlap(buildings)
-
                 for b in buildings:
                     building_walls = identify_walls(b, walls)
                     scores = []
@@ -137,7 +135,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         wall = model_d.transform(wall)
                         prediction = model_d.inference(wall)
                         if use_dam_detection:
-                            prediction = evaluate_wall(w, prediction)
+                            prediction = evaluate_wall(w, prediction, model_d)
                         else:
                             prediction = int(torch.argmax(prediction))
                             print(prediction)

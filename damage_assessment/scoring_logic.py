@@ -20,9 +20,6 @@ class Damage(Enum):
         return (255,255,255)
 
 
-def check_overlap(buildings):
-    pass
-
 def identify_walls(building, walls):
     building_walls = []
     for w in walls:
@@ -57,7 +54,28 @@ def building_scoring_cls(walls_damage):
     return Damage.AMBER
 
 def building_scoring_det(walls_damage):
-    pass
+    if 1 and 2 not in walls_damage:
+        return Damage.GREEN
+    if 2 in walls_damage:
+        return Damage.RED
+    counts  = collections.Counter(walls_damage)
+    if counts[1] > 1 or counts[1] / counts[0] > 1/4:
+        return Damage.RED
+    return Damage.AMBER
 
-def evaluate_wall(wall, damages):
-    pass
+def evaluate_wall(wall, damages, model_d):
+    percent_dam = 0
+    for *xyxy, conf, cls in reversed(damages):
+        cls = int(cls)
+        if model_d.names[cls] == 'rebar':
+            return 2
+        if model_d.names[cls] != 'superficial':
+            percent_dam += iow(xyxy, wall)
+    if percent_dam > 0.5
+        return 2
+    if percent_dam < 0.01:
+        return 0
+    return 1
+
+
+
