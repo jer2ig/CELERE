@@ -30,7 +30,7 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
 from ClassDetect import Detection
-from classify.ClassPredict import Classify
+from classify.ClassPredict import Classification
 from damage_assessment.scoring_logic import (Damage, identify_walls, building_scoring_cls,
                                              building_scoring_det, evaluate_wall)
 
@@ -74,7 +74,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
     if use_dam_detection:
         model_d = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
     else:
-        model_d = Classify(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
+        model_d = Classification(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
 
     # Dataloader
     dataset = LoadImages(source, img_size=model_b.imgsz, stride=model_b.stride, auto=model_b.pt)

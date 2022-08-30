@@ -29,7 +29,7 @@ IMAGENET_STD = 0.229, 0.224, 0.225  # RGB standard deviation
 
 
 @smart_inference_mode()
-class Classify:
+class Classification:
     def __init__(self,
                  weights=ROOT / 'yolov5s-cls.pt',  # model.pt path(s)
                  device='',  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -194,7 +194,7 @@ def parse_opt():
 
 def main(opt):
     check_requirements(exclude=('tensorboard', 'thop'))
-    classifier = Classify(**vars(opt))
+    classifier = Classification(**vars(opt))
     classifier.run(**vars(opt))
 
 
