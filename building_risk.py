@@ -78,7 +78,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
     if use_dam_detection:
         model_ddet = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
     if combine:
-        model_ddet = Classification(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=combine)
+        model_ddet = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=combine)
 
     # Dataloader
     dataset = LoadImages(source, img_size=model_b.imgsz, stride=model_b.stride, auto=model_b.pt)
