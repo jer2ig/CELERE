@@ -73,10 +73,10 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
     # Building detection model
     model_b = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_b)
-    if use_dam_detection:
-        model_d = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
-    else:
-        model_d = Classification(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
+    if use_dam_detection or combine:
+        model_dcls = Detection(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
+    if not use_dam_detection or combine:
+        model_ddet = Classification(data=data, imgsz=imgsz, device=device, half=half, dnn=dnn, weights=weights_d)
 
     # Dataloader
     dataset = LoadImages(source, img_size=model_b.imgsz, stride=model_b.stride, auto=model_b.pt)
@@ -135,20 +135,25 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         for w in building_walls:
                             wall = save_one_box(w, imc)
                             crop_i +=1
-                            wall = model_d.transform(wall)
                             if use_dam_detection:
-                                prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
+                                wall = model_dcls.transform(wall)
+                                prediction = model_dcls.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
                                                                visualize)
-                                prediction = evaluate_wall(w, prediction, model_d)
+                                prediction = evaluate_wall(w, prediction, model_dcls)
                             else:
-                                prediction = model_d.inference(wall)
+                                wall = model_ddet.transform(wall)
+                                prediction = model_ddet.inference(wall)
                                 prediction = int(torch.argmax(prediction))
                             scores.append(prediction)
                     else:
                         build = save_one_box(b, imc)
-                        build = model_d.transform(build)
+                        if combine:
+                            build2 = build.copy()
+                        else
+                            build2 = build
                         if use_dam_detection or combine:
-                            prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, build, iou_thres, max_det, path,
+                            build = model_ddet.transform(build)
+                            prediction = model_ddet.inference(agnostic_nms, augment, classes, conf_thres, build, iou_thres, max_det, path,
                                                            visualize)
                             if len(prediction[0])==0:
                                 prediction = 0
@@ -157,7 +162,8 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             print(prediction)
                             scores.append(prediction)
                         if not use_dam_detection or combine:
-                            prediction = model_d.inference(build)
+                            build = model_dcls.transform(build2)
+                            prediction = model_dcls.inference(build)
                             prediction = int(torch.argmax(prediction))*2
                             print(prediction)
                             scores.append(prediction)
