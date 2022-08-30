@@ -133,7 +133,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 for b in buildings:
                     building_walls = identify_walls(b, walls)
                     scores = []
-                    if not disable_walls or not combine:
+                    if not disable_walls and not combine:
                         for w in building_walls:
                             wall = save_one_box(w, imc)
                             crop_i +=1
