@@ -39,6 +39,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
         weights_d=ROOT / 'yolov5s.pt',  # model.pt path(s)
         use_dam_detection=False,
         disable_walls=False,
+        combine=False,
         source=ROOT / 'data/images',  # file/dir
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
@@ -146,7 +147,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     else:
                         build = save_one_box(b, imc)
                         build = model_d.transform(build)
-                        if use_dam_detection:
+                        if use_dam_detection or combine:
                             prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, build, iou_thres, max_det, path,
                                                            visualize)
                             if len(prediction[0])==0:
@@ -154,11 +155,12 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             else:
                                 prediction = 2
                             print(prediction)
-                        else:
+                            scores.append(prediction)
+                        if not use_dam_detection or combine:
                             prediction = model_d.inference(build)
                             prediction = int(torch.argmax(prediction))*2
                             print(prediction)
-                        scores.append(prediction)
+                            scores.append(prediction)
 
                     if use_dam_detection:
                         score = building_scoring_det(scores)
@@ -212,6 +214,7 @@ def parse_opt():
     parser.add_argument('--weights-d', nargs='+', type=str, default=ROOT / 'damage_assessment/damage_classify.pt', help='weights for damage_classification')
     parser.add_argument('--use-dam-detection', action='store_true', help='use damage detection instead of classifcation')
     parser.add_argument('--disable-walls', action='store_true', help='replace walls by buildings in damage analysis step')
+    parser.add_argument('--combine', action='store_true', help='run both classification and detection')
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
