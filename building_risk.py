@@ -38,6 +38,7 @@ from damage_assessment.scoring_logic import (Damage, identify_walls, building_sc
 def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
         weights_d=ROOT / 'yolov5s.pt',  # model.pt path(s)
         use_dam_detection=False,
+        disable_walls=False,
         source=ROOT / 'data/images',  # file/dir
         data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
         imgsz=(640, 640),  # inference size (height, width)
@@ -129,20 +130,36 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                 for b in buildings:
                     building_walls = identify_walls(b, walls)
                     scores = []
-                    for w in building_walls:
-                        wall = save_one_box(w, imc, file=save_dir / 'crops' / f'{str(crop_i).zfill(2)}.jpg')
-                        crop_i +=1
-                        wall = model_d.transform(wall)
+                    if not disable_walls:
+                        for w in building_walls:
+                            wall = save_one_box(w, imc)
+                            crop_i +=1
+                            wall = model_d.transform(wall)
+                            if use_dam_detection:
+                                prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
+                                                               visualize)
+                                prediction = evaluate_wall(w, prediction, model_d)
+                            else:
+                                prediction = model_d.inference(wall)
+                                prediction = int(torch.argmax(prediction))
+                            scores.append(prediction)
+                    else:
+                        build = save_one_box(b, imc)
+                        build = model_d.transform(build)
                         if use_dam_detection:
-                            prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
+                            prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, build, iou_thres, max_det, path,
                                                            visualize)
-                            prediction = evaluate_wall(w, prediction, model_d)
+                            if len(damages[0])==0:
+                                prediction == 2
+                            else:
+                                prediction == 0
                             print(prediction)
                         else:
                             prediction = model_d.inference(wall)
-                            prediction = int(torch.argmax(prediction))
+                            prediction = int(torch.argmax(prediction))*2
                             print(prediction)
                         scores.append(prediction)
+
                     if use_dam_detection:
                         score = building_scoring_det(scores)
                     else:
@@ -194,6 +211,7 @@ def parse_opt():
     parser.add_argument('--weights-b', nargs='+', type=str, default=ROOT / 'damage_assessment/buildings.pt', help='weights for building model')
     parser.add_argument('--weights-d', nargs='+', type=str, default=ROOT / 'damage_assessment/damage_classify.pt', help='weights for damage_classification')
     parser.add_argument('--use-dam-detection', action='store_true', help='use damage detection instead of classifcation')
+    parser.add_argument('--disable-walls', action='store_true', help='replace walls by buildings in damage analysis step')
     parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='(optional) dataset.yaml path')
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
@@ -210,7 +228,7 @@ def parse_opt():
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--visualize', action='store_true', help='visualize features')
     parser.add_argument('--update', action='store_true', help='update all models')
-    parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
+    parser.add_argument('--project', default=ROOT / 'runs/damage', help='save results to project/name')
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')

@@ -46,6 +46,8 @@ def iow(build, wall):
 
 
 def building_scoring_cls(walls_damage):
+    if 2 in walls_damage:
+        return Damage.RED
     if 1 not in walls_damage:
         return Damage.GREEN
     counts  = collections.Counter(walls_damage)
@@ -54,7 +56,6 @@ def building_scoring_cls(walls_damage):
     return Damage.AMBER
 
 def building_scoring_det(walls_damage):
-    print(walls_damage)
     if 2 in walls_damage:
         return Damage.RED
     if 1 not in walls_damage:
@@ -85,6 +86,7 @@ def evaluate_wall(wall, damages, model_d):
     if percent_dam < 0.01:
         return 0
     return 1
+
 
 
 
