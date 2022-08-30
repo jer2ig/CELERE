@@ -151,7 +151,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                         build = save_one_box(b, imc)
                         if combine:
                             build2 = build.copy()
-                        else
+                        else:
                             build2 = build
                         if use_dam_detection or combine:
                             build = model_ddet.transform(build)
