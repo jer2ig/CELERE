@@ -150,9 +150,9 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                             prediction = model_d.inference(agnostic_nms, augment, classes, conf_thres, build, iou_thres, max_det, path,
                                                            visualize)
                             if len(prediction[0])==0:
-                                prediction == 0
+                                prediction = 0
                             else:
-                                prediction == 2
+                                prediction = 2
                             print(prediction)
                         else:
                             prediction = model_d.inference(build)
