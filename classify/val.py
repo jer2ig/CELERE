@@ -117,10 +117,10 @@ def run(
                     loss += criterion(y, labels)
 
     loss /= n
+    pred, targets = torch.cat(pred), torch.cat(targets)
     if save_txt:
         np.savetxt("predictions.txt", pred.cpu().detach().numpy())
         np.savetxt("targets.txt", targets.cpu().detach().numpy())
-    pred, targets = torch.cat(pred), torch.cat(targets)
     correct = (targets[:, None] == pred).float()
     acc = torch.stack((correct[:, 0], correct.max(1).values), dim=1)  # (top1, top5) accuracy
     top1, top5 = acc.mean(0).tolist()
