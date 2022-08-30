@@ -155,7 +155,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                                 prediction == 0
                             print(prediction)
                         else:
-                            prediction = model_d.inference(wall)
+                            prediction = model_d.inference(build)
                             prediction = int(torch.argmax(prediction))*2
                             print(prediction)
                         scores.append(prediction)
