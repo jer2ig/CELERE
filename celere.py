@@ -198,7 +198,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
 
         # Print time (inference-only)
-        LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt.dt * 1E3:.1f}ms")
+        #LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt.dt * 1E3:.1f}ms")
 
     # Print results
     t = dt.t / seen * 1E3 # speeds per image
