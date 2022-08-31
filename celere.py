@@ -135,12 +135,12 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                                 crop_i +=1
                                 if use_dam_detection:
                                     wall = model_ddet.transform(wall)
-                                    prediction = model_dcls.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
+                                    prediction = model_ddet.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
                                                                    visualize)
                                     prediction = evaluate_wall(w, prediction, model_dcls)
                                 else:
                                     wall = model_dcls.transform(wall)
-                                    prediction = model_ddet.inference(wall)
+                                    prediction = model_dcls.inference(wall)
                                     prediction = int(torch.argmax(prediction))
                                 scores.append(prediction)
                         else:
