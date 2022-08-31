@@ -91,102 +91,102 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
             pred = model_b.inference(agnostic_nms, augment, classes, conf_thres, im, iou_thres, max_det, path,
                                   visualize)
 
-        # Second-stage classifier (optional)
-        # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
+            # Second-stage classifier (optional)
+            # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
 
-        # Process predictions
-        for i, det in enumerate(pred):  # per image
-            seen += 1
-            p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
+            # Process predictions
+            for i, det in enumerate(pred):  # per image
+                seen += 1
+                p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
-            p = Path(p)  # to Path
-            save_path = str(save_dir / p.name)  # im.jpg
-            txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
-            s += '%gx%g ' % im.shape[-2:]  # print string
-            gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
-            imc = im0.copy()   # for save_crop
-            annotator = Annotator(im0, line_width=line_thickness, example=str(model_b.names))
-            crop_i = 0
-            if len(det):
-                # Rescale boxes from img_size to im0 size
-                det[:, :4] = scale_coords(im.shape[-2:], det[:, :4], im0.shape).round()
+                p = Path(p)  # to Path
+                save_path = str(save_dir / p.name)  # im.jpg
+                txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
+                s += '%gx%g ' % im.shape[-2:]  # print string
+                gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
+                imc = im0.copy()   # for save_crop
+                annotator = Annotator(im0, line_width=line_thickness, example=str(model_b.names))
+                crop_i = 0
+                if len(det):
+                    # Rescale boxes from img_size to im0 size
+                    det[:, :4] = scale_coords(im.shape[-2:], det[:, :4], im0.shape).round()
 
-                # Print results
-                for c in det[:, -1].unique():
-                    n = (det[:, -1] == c).sum()  # detections per class
-                    s += f"{n} {model_b.names[int(c)]}{'s' * (n > 1)}, "  # add to string
+                    # Print results
+                    for c in det[:, -1].unique():
+                        n = (det[:, -1] == c).sum()  # detections per class
+                        s += f"{n} {model_b.names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
-                buildings = []
-                walls = []
-                # Obtain buildings and walls
-                for *xyxy, conf, cls in reversed(det):
-                    cls = int(cls)
-                    if model_b.names[cls] == 'house':
-                        print("building")
-                        buildings.append(xyxy)
-                    elif model_b.names[cls] == 'wall':
-                        print("wall")
-                        walls.append(xyxy)
-                    else:
-                        print("Unknown cls: ", cls)
-
-                for b in buildings:
-                    building_walls = identify_walls(b, walls)
-                    scores = []
-                    if not disable_walls and not combine:
-                        for w in building_walls:
-                            wall = save_one_box(w, imc)
-                            crop_i +=1
-                            if use_dam_detection:
-                                wall = model_dcls.transform(wall)
-                                prediction = model_dcls.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
-                                                               visualize)
-                                prediction = evaluate_wall(w, prediction, model_dcls)
-                            else:
-                                wall = model_ddet.transform(wall)
-                                prediction = model_ddet.inference(wall)
-                                prediction = int(torch.argmax(prediction))
-                            scores.append(prediction)
-                    else:
-                        build = save_one_box(b, imc)
-                        if combine:
-                            build2 = build.copy()
+                    buildings = []
+                    walls = []
+                    # Obtain buildings and walls
+                    for *xyxy, conf, cls in reversed(det):
+                        cls = int(cls)
+                        if model_b.names[cls] == 'house':
+                            print("building")
+                            buildings.append(xyxy)
+                        elif model_b.names[cls] == 'wall':
+                            print("wall")
+                            walls.append(xyxy)
                         else:
-                            build2 = build
-                        if use_dam_detection or combine:
-                            build = model_ddet.transform(build)
-                            prediction = model_ddet.inference(agnostic_nms, augment, classes, conf_thres, build, iou_thres, max_det, path,
-                                                           visualize)
-                            if len(prediction[0])==0:
-                                prediction = 0
+                            print("Unknown cls: ", cls)
+
+                    for b in buildings:
+                        building_walls = identify_walls(b, walls)
+                        scores = []
+                        if not disable_walls and not combine:
+                            for w in building_walls:
+                                wall = save_one_box(w, imc)
+                                crop_i +=1
+                                if use_dam_detection:
+                                    wall = model_dcls.transform(wall)
+                                    prediction = model_dcls.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
+                                                                   visualize)
+                                    prediction = evaluate_wall(w, prediction, model_dcls)
+                                else:
+                                    wall = model_ddet.transform(wall)
+                                    prediction = model_ddet.inference(wall)
+                                    prediction = int(torch.argmax(prediction))
+                                scores.append(prediction)
+                        else:
+                            build = save_one_box(b, imc)
+                            if combine:
+                                build2 = build.copy()
                             else:
-                                prediction = 2
-                            print(prediction)
-                            scores.append(prediction)
-                        if not use_dam_detection or combine:
-                            build = model_dcls.transform(build2)
-                            prediction = model_dcls.inference(build)
-                            prediction = int(torch.argmax(prediction))*2
-                            print(prediction)
-                            scores.append(prediction)
+                                build2 = build
+                            if use_dam_detection or combine:
+                                build = model_ddet.transform(build)
+                                prediction = model_ddet.inference(agnostic_nms, augment, classes, conf_thres, build, iou_thres, max_det, path,
+                                                               visualize)
+                                if len(prediction[0])==0:
+                                    prediction = 0
+                                else:
+                                    prediction = 2
+                                print(prediction)
+                                scores.append(prediction)
+                            if not use_dam_detection or combine:
+                                build = model_dcls.transform(build2)
+                                prediction = model_dcls.inference(build)
+                                prediction = int(torch.argmax(prediction))*2
+                                print(prediction)
+                                scores.append(prediction)
 
-                    if use_dam_detection:
-                        score = building_scoring_det(scores)
-                    else:
-                        score = building_scoring_cls(scores)
+                        if use_dam_detection:
+                            score = building_scoring_det(scores)
+                        else:
+                            score = building_scoring_cls(scores)
 
-                    if save_txt:  # Write to file
-                        xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (score.value, *xywh)  # label format
-                        with open(f'{txt_path}.txt', 'a') as f:
-                            f.write(('%g ' * len(line)).rstrip() % line + '\n')
+                        if save_txt:  # Write to file
+                            xywh = (xyxy2xywh(torch.tensor(b).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                            line = (score.value, *xywh)  # label format
+                            with open(f'{txt_path}.txt', 'a') as f:
+                                f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
-                    if save_img or save_crop or view_img:  # Add bbox to image
-                        label = score.value
-                        annotator.box_label(b, label, color=Damage.get_color(score))
+                        if save_img or save_crop or view_img:  # Add bbox to image
+                            label = score.value
+                            annotator.box_label(b, label, color=Damage.get_color(score))
 
-                    if save_crop:
-                        save_one_box(b, imc, file=save_dir / 'crops' / score.value / f'{p.stem}.jpg', BGR=True)
+                        if save_crop:
+                            save_one_box(b, imc, file=save_dir / 'crops' / score.value / f'{p.stem}.jpg', BGR=True)
 
             # Stream results
             im0 = annotator.result()
