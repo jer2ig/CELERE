@@ -137,7 +137,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                                     wall = model_ddet.transform(wall)
                                     prediction = model_ddet.inference(agnostic_nms, augment, classes, conf_thres, wall, iou_thres, max_det, path,
                                                                    visualize)
-                                    prediction = evaluate_wall(w, prediction, model_dcls)
+                                    prediction = evaluate_wall(w, prediction, model_ddet)
                                 else:
                                     wall = model_dcls.transform(wall)
                                     prediction = model_dcls.inference(wall)
@@ -198,7 +198,7 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
 
         # Print time (inference-only)
-        #LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt.dt * 1E3:.1f}ms")
+        LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt.dt * 1E3:.1f}ms")
 
     # Print results
     t = dt.t / seen * 1E3 # speeds per image
