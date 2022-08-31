@@ -122,13 +122,9 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                     for *xyxy, conf, cls in reversed(det):
                         cls = int(cls)
                         if model_b.names[cls] == 'house':
-                            print("building")
                             buildings.append(xyxy)
                         elif model_b.names[cls] == 'wall':
-                            print("wall")
                             walls.append(xyxy)
-                        else:
-                            print("Unknown cls: ", cls)
 
                     for b in buildings:
                         building_walls = identify_walls(b, walls)
@@ -161,13 +157,11 @@ def run(weights_b=ROOT / 'yolov5s.pt',  # model.pt path(s)
                                     prediction = 0
                                 else:
                                     prediction = 2
-                                print(prediction)
                                 scores.append(prediction)
                             if not use_dam_detection or combine:
                                 build = model_dcls.transform(build2)
                                 prediction = model_dcls.inference(build)
                                 prediction = int(torch.argmax(prediction))*2
-                                print(prediction)
                                 scores.append(prediction)
 
                         if use_dam_detection:
